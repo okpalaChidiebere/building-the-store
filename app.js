@@ -116,6 +116,40 @@ function removeGoalAction (id) {
   }
 }*/
 
+/*
+The code below is equal to 
+const checker = (store) => (next) => (action) => {
+
+  return next(action)
+}
+using arrow functions in ES6 JavaScript
+So we basically have a function that returns a function
+*/
+function checker (store) {
+  //this function returned will wither be the net middleware function inline or it will be the dispatch function itself
+  return function (next){ 
+    return function (action){
+
+      if (
+        action.type === ADD_TODO &&
+        action.todo.name.toLowerCase().includes('bitcoin')
+      ) {
+        return alert("Nope. That's a bad idea.")
+      }
+    
+      if (
+        action.type === ADD_GOAL &&
+        action.goal.name.toLowerCase().includes('bitcoin')
+      ) {
+        return alert("Nope. That's a bad idea.")
+      }
+
+      return next(action)
+    }
+  }
+}
+
+
 
 /*
 We pass this main or root reducer to the createStore()
@@ -124,7 +158,7 @@ We pass this main or root reducer to the createStore()
 const store = Redux.createStore(Redux.combineReducers({ //we no longer need our custom built in state management library; actual createStore (similar to Redux library) and our root redcuer(similar to Redux.combineReducers)
   todos,
 	goals,
-}))
+}), Redux.applyMiddleware(checker))
 
 
 //The user can inovke a subcribe method and pass a call back function. This callbackfunction when invoked by the user,
