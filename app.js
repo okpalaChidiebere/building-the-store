@@ -125,7 +125,18 @@ const store = createStore(app) //you pass to the library your reducer. So that i
 //The user can inovke a subcribe method and pass a call back function. This callbackfunction when invoked by the user,
 //will listen for changes in the state tree as well as the user can do anything they want in this call back function
 store.subscribe(() => {
-  console.log('The new state is: ', store.getState())
+  //console.log('The new state is: ', store.getState())
+  const { goals, todos } = store.getState()
+
+  /* We have to reset the UI so that it will not print duplicate of state.
+  Because what happens is whenever the state updates, it loops through all the todos and goals then print them agian afreash
+  */
+  document.getElementById('goals').innerHTML = ''
+  document.getElementById('todos').innerHTML = ''
+  /*End reseting the UI */
+
+  goals.forEach(addGoalToDOM)
+  todos.forEach(addTodoToDOM)
 })
 
 //The user can subcribe more than one time
@@ -181,7 +192,7 @@ function goals (state = [], action) {
 /*Whenever, you want to update the state, you  call the dispatch and pass the action object
 and the createStore will know how to update the state because of the reduer function
 Updates to the store can only be triggered by dispatching actions*/
-store.dispatch(addTodoAction({
+/*store.dispatch(addTodoAction({
     id: 0,
     name: 'Learn Redux',
     complete: false
@@ -213,7 +224,7 @@ store.dispatch(addGoalAction({
     name: 'Lose 20 pounds'
 }))
 
-store.dispatch(removeGoalAction(0))
+store.dispatch(removeGoalAction(0))*/
 
 
 
@@ -243,4 +254,103 @@ Date.now()
 Math.random()
  */
 
+function generateId () {
+  return Math.random().toString(36).substring(2) + (new Date()).getTime().toString(36); //return a unique id
+}
 
+
+/*
+This method will extract the information from the input field, reset the input field, and then dispatch an addTodoAction 
+Action Creator with the text that the user typed into the input field.
+
+So we're using the UI to change the state of our store
+*/
+function addTodo () {
+
+  const input = document.getElementById('todo')
+  const name = input.value
+  input.value = '' //reset the input value to be empty by default
+
+  store.dispatch(addTodoAction({
+    name,
+    complete: false,
+    id: generateId()
+  }))
+}
+
+/*
+This method will extract the information from the input field, reset the input field, and then dispatch an addGoalAction 
+Action Creator with the text that the user typed into the input field.
+
+So we're using the UI to change the state of our store
+*/
+function addGoal () {
+
+  const input = document.getElementById('goal')
+  const name = input.value
+  input.value = ''  //reset the input value to be empty by default
+
+  store.dispatch(addGoalAction({
+    id: generateId(),
+    name,
+  }))
+}
+
+
+document.getElementById('todoBtn').addEventListener('click', addTodo)
+
+document.getElementById('goalBtn').addEventListener('click', addGoal)
+
+
+/* This button will be used to remove a todo or goal item from the the state of our store
+ * REMEMBER: Our DOM is the representation of the state in our store and not the other way round
+ onClick parameter will be a callback function that we will execute when this button is clicked. cool stuff right? ;)
+ */
+function createRemoveButton (onClick) {
+  const removeBtn = document.createElement('button')
+  removeBtn.innerHTML = 'X'
+  removeBtn.addEventListener('click', onClick)
+  return removeBtn
+}
+
+/*
+ The changes are not reflecting the new state visually in the UI by just calling the dispatch. 
+ But calling these functions inside the subecribe function will print the state of our dome in the UI
+ REMEMBER: Our DOM is the representation of the state in our store and not the other way round
+ */
+function addTodoToDOM (todo) {
+  const node = document.createElement('li')
+  const text = document.createTextNode(todo.name)
+
+  const removeBtn = createRemoveButton(() => {
+    store.dispatch(removeTodoAction(todo.id))
+  })
+
+  node.appendChild(text)
+  node.appendChild(removeBtn)
+  node.style.textDecoration = todo.complete ? 'line-through' : 'none' //When a todo is completed(bool value which will be true), we want a line to appear through it on the list
+
+  //Add an eventListener for when this item in the list is clicked, we mark it as complete
+  node.addEventListener('click', () => {
+    store.dispatch(toggleTodoAction(todo.id)) //the result of this dispatch function will be rendered in the UI by the store.subscribe callback
+  })
+
+  document.getElementById('todos')
+    .appendChild(node)
+}
+
+function addGoalToDOM (goal) {
+  const node = document.createElement('li')
+  const text = document.createTextNode(goal.name)
+
+  //we created a button, and the calback function(good thing about callback function is they are a function type just like int, string, etc. But his time its is an expression of a code we want to run) is what will be executed when the button is clicked
+  const removeBtn = createRemoveButton(() => {
+    store.dispatch(removeGoalAction(goal.id))
+  })
+
+  node.appendChild(text)//append the text to the node
+  node.appendChild(removeBtn) //append the removeButton
+
+  document.getElementById('goals')
+    .append(node)
+}
