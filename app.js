@@ -77,11 +77,26 @@ const unSubscribe = store.subscribe(() => {
 //This code is a reducer method that explains how the state will change based on the action that occurs in the application
 //Reducer function MUST be a pure function
 function todos (state = [], action) {
-  if (action.type === 'ADD_TODO') {
-    return state.concat([action.todo])
+  switch(action.type) {
+    case 'ADD_TODO' :
+      return state.concat([action.todo])
+    case 'REMOVE_TODO' :
+      return state.filter((todo) => todo.id !== action.id)
+    /*
+    For TOOGLE_TODO this is a bit tricky. The goal is when the TOGGLE_TODO action is dispatched, we want to update the complete property on whatever todo is is passed along in tha ction payload
+    We still want to keep our reducer function as a Pure function. So our algorithm was we map through the todos state, and if
+    there is no matching todo we just return the back the todo input to the user without the modified change. ELSE if there is a matching todo
+    we invoke object.assign(), pass to it am empty object (a new object), we pass to it what we want to merge to the empty object which is the todo object in our case, 
+    then finally pass to it any updates we want to make to the merged object(which is complete propert we want to update)
+    REMEMBER, the reason, we did not modify the todo payload input directly, because it will fail one of the rule of a pure function which is
+    Pure functions do not produce side effects like I/O operations
+    */
+    case 'TOGGLE_TODO' :
+      return state.map((todo) => todo.id !== action.id ? todo :
+        Object.assign({}, todo, { complete: !todo.complete })) //we used Object.assign() to return a new object with merged properties
+    default :
+      return state
   }
-
-  return state
 }
 
 /*Whenever, you want to update the state, you  call the dispatch and pass the action object
