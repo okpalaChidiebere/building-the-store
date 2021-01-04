@@ -55,9 +55,22 @@ function createStore (reducer) {
  * Below are example code on how to use the
  * createStore function above
  */
+//Though each reducer handles a different slice of state, we must combine reducers into a single reducer to pass to the store
+//We have a root reducer function that returns a state tree with all the data it has
+//The argument 'state = {}' initialize the state to an empty object if the state tree is undefined yet
+// The argument 'action' will update either the todos or goals depending on the action type. 
+function app (state = {}, action) {
+  return {
+    todos: todos(state.todos, action), //the todo reducer function will update the todo slice of the state tree
+    goals: goals(state.goals, action), //the goals reducer function will update the goals slide of the state tree
+  }
+}
 
 
-const store = createStore(todos) //you pass to the library your reducer. So that it will effectively know how to update the state tree
+/*
+We pass this main or root reducer to the createStore()
+*/
+const store = createStore(app) //you pass to the library your reducer. So that it will effectively know how to update the state tree
 
 //The user can inovke a subcribe method and pass a call back function. This callbackfunction when invoked by the user,
 //will listen for changes in the state tree as well as the user can do anything they want in this call back function
@@ -99,6 +112,22 @@ function todos (state = [], action) {
   }
 }
 
+/*
+This new reducer function will mamange another state for goals
+Reducers are typically named after the slices of state they manage
+FYI the code 'state = []' means we assign an empty array when the goals state is not yet defined
+*/
+function goals (state = [], action) {
+  switch(action.type) {
+    case 'ADD_GOAL' :
+      return state.concat([action.goal])
+    case 'REMOVE_GOAL' :
+      return state.filter((goal) => goal.id !== action.id)
+    default :
+      return state
+  }
+}
+
 /*Whenever, you want to update the state, you  call the dispatch and pass the action object
 and the createStore will know how to update the state because of the reduer function
 Updates to the store can only be triggered by dispatching actions*/
@@ -109,6 +138,55 @@ store.dispatch({
     name: 'Learn Redux',
     complete: false
   }
+})
+
+store.dispatch({
+  type: 'ADD_TODO',
+  todo: {
+    id: 1,
+    name: 'Wash the car',
+    complete: false,
+  }
+})
+
+store.dispatch({
+  type: 'ADD_TODO',
+  todo: {
+    id: 2,
+    name: 'Go to the gym',
+    complete: true,
+  }
+})
+
+store.dispatch({
+  type: 'REMOVE_TODO',
+  id: 1
+})
+
+store.dispatch({
+  type: 'TOGGLE_TODO',
+  id: 0
+})
+
+store.dispatch({
+  type: 'ADD_GOAL',
+  goal: {
+    id: 0,
+    name: 'Learn Redux'
+  }
+})
+
+store.dispatch({
+  type: 'ADD_GOAL',
+  goal: {
+    id: 1,
+    name: 'Lose 20 pounds'
+  }
+})
+
+store.dispatch({
+  type: 'REMOVE_GOAL',
+  id: 0
 })
 
 
