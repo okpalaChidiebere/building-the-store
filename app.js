@@ -109,18 +109,23 @@ function removeGoalAction (id) {
 //We have a root reducer function that returns a state tree with all the data it has
 //The argument 'state = {}' initialize the state to an empty object if the state tree is undefined yet
 // The argument 'action' will update either the todos or goals depending on the action type. 
-function app (state = {}, action) {
+/*function app (state = {}, action) {
   return {
     todos: todos(state.todos, action), //the todo reducer function will update the todo slice of the state tree
     goals: goals(state.goals, action), //the goals reducer function will update the goals slide of the state tree
   }
-}
+}*/
 
 
 /*
 We pass this main or root reducer to the createStore()
 */
-const store = createStore(app) //you pass to the library your reducer. So that it will effectively know how to update the state tree
+//const store = createStore(app) //you pass to the library your reducer. So that it will effectively know how to update the state tree
+const store = Redux.createStore(Redux.combineReducers({ //we no longer need our custom built in state management library; actual createStore (similar to Redux library) and our root redcuer(similar to Redux.combineReducers)
+  todos,
+	goals,
+}))
+
 
 //The user can inovke a subcribe method and pass a call back function. This callbackfunction when invoked by the user,
 //will listen for changes in the state tree as well as the user can do anything they want in this call back function
