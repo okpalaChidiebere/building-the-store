@@ -231,6 +231,18 @@
 
             removeItem = (todo) => {
                 this.props.store.dispatch(removeTodoAction(todo.id))
+
+                return API.deleteTodo(todo.id)
+                /* The reason we do not want to wait for the server. Because sometimes there might be a delay.
+                You dont want the delay to reflect in your UI 
+                .then(() => {
+                    this.props.store.dispatch(removeGoalAction(goal.id))
+                })*/
+                /**/
+                .catch(() => {
+                    this.props.store.dispatch(addTodoAction(todo)) //we add the item back to the list if there is an error
+                    alert('An error occurred. Try again.')
+                })
             }
 
             toggleItem = (id) => {
@@ -282,6 +294,12 @@
 
             removeItem = (goal) => {
                 this.props.store.dispatch(removeGoalAction(goal.id))
+
+                return API.deleteGoal(goal.id)
+                .catch(() => {
+                    this.props.store.dispatch(addGoalAction(goal))
+                    alert('An error occurred. Try again.')
+                })
             }
 
           render() {
