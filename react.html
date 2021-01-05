@@ -27,6 +27,7 @@
         const TOGGLE_TODO = 'TOGGLE_TODO'
         const ADD_GOAL = 'ADD_GOAL'
         const REMOVE_GOAL = 'REMOVE_GOAL'
+        const RECEIVE_DATA = 'RECEIVE_DATA'
     
         function addTodoAction (todo) {
           return {
@@ -62,6 +63,14 @@
             id,
           }
         }
+
+        function receiveDataAction (todos, goals) {
+            return {
+                type: RECEIVE_DATA,
+                todos,
+                goals,
+            }
+        }
     
         function todos (state = [], action) {
           switch(action.type) {
@@ -72,6 +81,8 @@
             case TOGGLE_TODO :
               return state.map((todo) => todo.id !== action.id ? todo :
                 Object.assign({}, todo, { complete: !todo.complete }))
+            case RECEIVE_DATA : //at this point, the state will be an empty array, so instead of returning an empty array, we will return the todos action payload which is directly from the API
+                return action.todos
             default :
               return state
           }
@@ -83,6 +94,8 @@
               return state.concat([action.goal])
             case REMOVE_GOAL :
               return state.filter((goal) => goal.id !== action.id)
+            case RECEIVE_DATA :
+                return action.goals
             default :
               return state
           }
@@ -279,12 +292,15 @@
                 
                 store.subscribe(() => this.forceUpdate()) //forceUpdate is an anti-pattern in React. We rearly use it but it works
 
+                //Promise.all() to wait until all Promises have resolved before displaying the content to the user.
+                //more on https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
                 Promise.all([
                     API.fetchTodos(),
                     API.fetchGoals()
                 ]).then(([ todos, goals ]) => {
-                    console.log('Todos', todos)
-                    console.log('Goals', goals)
+                    //console.log('Todos', todos)
+                    //console.log('Goals', goals)
+                    store.dispatch(receiveDataAction(todos, goals))
                 })
             }
 
