@@ -159,7 +159,11 @@
         function List (props) {
           return (
             <ul>
-              <li>LIST</li>
+                {props.items.map((item) => (
+                    <li key={item.id}>
+                        <span>{item.name}</span>
+                    </li>
+                ))}
             </ul>
           )
         }
@@ -204,7 +208,7 @@
                 />
                 <button onClick={this.addItem}>Add Todo</button>
     
-                <List />
+                <List items={this.props.todos}/>
               </div>
             )
           }
@@ -234,7 +238,7 @@
                 />
                 <button onClick={this.addItem}>Add Goal</button>
     
-                <List />
+                <List items={this.props.goals}/>
               </div>
             )
           }
