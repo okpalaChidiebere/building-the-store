@@ -2,7 +2,6 @@
 <html>
 <head>
     <title>Udacity Todos Goals</title>
-    <script src="app.js" defer></script> <!-- defer attribute helps to find our js file and execute it if found. Our code can be viewed in the dev tool browser-->
     <!-- This will download the real Redux library and give it a global namespace as `Redux` 
     So anywhere we want to access redux inside of our app, we wil use this global namespace -->
      <script src="https://cdnjs.cloudflare.com/ajax/libs/redux/3.7.2/redux.min.js"></script>
@@ -12,6 +11,146 @@
 </head>
 <body>
     <div id='app'></div>
+
+    <script type='text/javascript'>
+        function generateId () {
+          return Math.random().toString(36).substring(2) + (new Date()).getTime().toString(36);
+        }
+    
+        // App Code
+        const ADD_TODO = 'ADD_TODO'
+        const REMOVE_TODO = 'REMOVE_TODO'
+        const TOGGLE_TODO = 'TOGGLE_TODO'
+        const ADD_GOAL = 'ADD_GOAL'
+        const REMOVE_GOAL = 'REMOVE_GOAL'
+    
+        function addTodoAction (todo) {
+          return {
+            type: ADD_TODO,
+            todo,
+          }
+        }
+    
+        function removeTodoAction (id) {
+          return {
+            type: REMOVE_TODO,
+            id,
+          }
+        }
+    
+        function toggleTodoAction (id) {
+          return {
+            type: TOGGLE_TODO,
+            id,
+          }
+        }
+    
+        function addGoalAction (goal) {
+          return {
+            type: ADD_GOAL,
+            goal,
+          }
+        }
+    
+        function removeGoalAction (id) {
+          return {
+            type: REMOVE_GOAL,
+            id,
+          }
+        }
+    
+        function todos (state = [], action) {
+          switch(action.type) {
+            case ADD_TODO :
+              return state.concat([action.todo])
+            case REMOVE_TODO :
+              return state.filter((todo) => todo.id !== action.id)
+            case TOGGLE_TODO :
+              return state.map((todo) => todo.id !== action.id ? todo :
+                Object.assign({}, todo, { complete: !todo.complete }))
+            default :
+              return state
+          }
+        }
+    
+        function goals (state = [], action) {
+          switch(action.type) {
+            case ADD_GOAL :
+              return state.concat([action.goal])
+            case REMOVE_GOAL :
+              return state.filter((goal) => goal.id !== action.id)
+            default :
+              return state
+          }
+        }
+    
+        const checker = (store) => (next) => (action) => {
+          if (
+            action.type === ADD_TODO &&
+            action.todo.name.toLowerCase().includes('bitcoin')
+          ) {
+            return alert("Nope. That's a bad idea.")
+          }
+    
+          if (
+            action.type === ADD_GOAL &&
+            action.goal.name.toLowerCase().includes('bitcoin')
+          ) {
+            return alert("Nope. That's a bad idea.")
+          }
+    
+          return next(action)
+        }
+    
+        const logger = (store) => (next) => (action) => {
+          console.group(action.type)
+            console.log('The action: ', action)
+            const result = next(action)
+            console.log('The new state: ', store.getState())
+          console.groupEnd()
+          return result
+        }
+    
+        const store = Redux.createStore(Redux.combineReducers({
+          todos,
+          goals,
+        }), Redux.applyMiddleware(checker, logger))
+    
+        store.subscribe(() => {
+          const { goals, todos } = store.getState()
+    
+          //document.getElementById('goals').innerHTML = ''
+          //document.getElementById('todos').innerHTML = ''
+    
+          //goals.forEach(addGoalToDOM)
+          //todos.forEach(addTodoToDOM)
+        })
+    
+        // DOM code
+        function addTodo () {
+          const input = document.getElementById('todo')
+          const name = input.value
+          input.value = ''
+    
+          store.dispatch(addTodoAction({
+            name,
+            complete: false,
+            id: generateId()
+          }))
+        }
+    
+        function addGoal () {
+          const input = document.getElementById('goal')
+          const name = input.value
+          input.value = ''
+    
+          store.dispatch(addGoalAction({
+            id: generateId(),
+            name,
+          }))
+        }
+    
+    </script>
     <!-- This lets the compiler to knw when we have babel script code to run-->
     <script type='text/babel'> 
         function List (props) {
@@ -23,10 +162,44 @@
         }
     
         class Todos extends React.Component {
+            
+            addItem = (e) => {
+
+                e.preventDefault()
+                const name = this.todoInput.value //we can easily reference this.input with arrow functions here because we assigned an input property to the global this within this component
+                this.todoInput.value = ''
+                
+                //the store was passed as props from the parent, the App Component. We will still break this props down into separete modules later
+                //but passing it as props for now makes it easier for refactoring later
+                this.props.store.dispatch(addTodoAction({
+                    name,
+                    complete: false,
+                    id: generateId()
+                }))
+            }
           render() {
             return (
               <div>
-                TODOS
+                <h1>Todo List</h1>
+                <input
+                type='text'
+                placeholder='Add Todo'
+                ref={ /*
+                    inputElement is a reference to the input DOM element. We are storing a reference to the input DOM element
+                    in the todoInput instance property of the Todos class.
+                    Remeber With arrow functions, the value of "this" is based on the function's surrounding context 
+                    (where the function is located in the code). In other words, the value of this inside an arrow function 
+                    is the same as the value of this outside the function.
+
+                    Instead of sticking the value of this input field on our Component state to make it controlled,
+                    We added a ref and stick this ref on this component instance. So whenever, we want
+                    to grap the value of the input, we will grap it from 'this.todoInput'
+
+                    for more on when to use refs cehck here https://reactjs.org/docs/refs-and-the-dom.html#callback-refs
+                    */
+                    (inputElement) => this.todoInput = inputElement}
+                />
+                <button onClick={this.addItem}>Add Todo</button>
     
                 <List />
               </div>
@@ -35,10 +208,28 @@
         }
     
         class Goals extends React.Component {
+
+            addItem = (e) => {
+                e.preventDefault()
+                const name = this.input.value
+                this.input.value = ''
+
+                this.props.store.dispatch(addGoalAction({
+                    id: generateId(),
+                    name,
+                }))
+            }
+
           render() {
             return (
               <div>
-                GOALS
+                <h1>Goals</h1>
+                <input
+                type='text'
+                placeholder='Add Goal'
+                ref={(input) => this.input = input}
+                />
+                <button onClick={this.addItem}>Add Goal</button>
     
                 <List />
               </div>
@@ -50,15 +241,19 @@
           render() {
             return (
               <div>
-                <Todos />
-                <Goals />
+                <Todos store={/*we get the store props passed to our app component and pass it down to the Todo component*/
+                    this.props.store}/>
+                <Goals store={this.props.store}/>
               </div>
             )
           }
         }
     
         ReactDOM.render(
-          <App />,
+          <App store={/*Ideally, we will have our store with the actions and reducers in 
+            another file(we will have all the code in <text/javascript> at another file) and we will import it as prop to our app. 
+            This way, we are maintaining our state from one place which is the purpose of using Redux*/
+              store}/>,
           document.getElementById('app')
         )
       </script>
