@@ -8,6 +8,10 @@
     <script src="https://unpkg.com/react@16.3.0-alpha.1/umd/react.development.js"></script> <!-- react -->
     <script src="https://unpkg.com/react-dom@16.3.0-alpha.1/umd/react-dom.development.js"></script> <!-- react-dom -->
     <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script> <!-- compiles our jsx code into normal js code-->
+    <!-- We're simulating the fake database to keep that aspect of the project less complex. Adding this file will add a property to the global window object namespace called
+    API(so we have window.API). so now we can inovoke eg API.fetchGoals ...etc. The methods we haveaccess to are 
+     API{ fetchGoals: ƒ, fetchTodos: ƒ, saveTodo: ƒ, saveGoal: ƒ, saveTodoToggle: ƒ, deleteGoal: ƒ, deleteTodo: ƒ } -->
+    <script src="https://ui.dev/goals-todos-api/index.js"></script>
 </head>
 <body>
     <div id='app'></div>
@@ -274,6 +278,14 @@
                 const { store } = this.props
                 
                 store.subscribe(() => this.forceUpdate()) //forceUpdate is an anti-pattern in React. We rearly use it but it works
+
+                Promise.all([
+                    API.fetchTodos(),
+                    API.fetchGoals()
+                ]).then(([ todos, goals ]) => {
+                    console.log('Todos', todos)
+                    console.log('Goals', goals)
+                })
             }
 
           render() {
