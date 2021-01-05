@@ -100,6 +100,20 @@
               return state
           }
         }
+
+        /*
+        REMEMBER: reducer always receives a state and action then returns a new state. And also reducers must be pure functions
+        */
+        function loading (state = true, action) {
+            console.log(action.type)
+            switch(action.type) {
+                case RECEIVE_DATA : //we already had the action type in todos and goals reducers that we wanted to listen for
+                    return false //we update the loading state of our store to false
+                default :
+                return state
+            }
+        }
+
     
         const checker = (store) => (next) => (action) => {
           if (
@@ -131,6 +145,8 @@
         const store = Redux.createStore(Redux.combineReducers({
           todos,
           goals,
+          //What happens is calling cretaeStrore, other slices of state tree(todos & goals) will have default value of [] while isloading will have default value of `true`
+          loading, //added the brand new reducer to our store. Each reducer you add, ass a new slice of state to manage to the state tree
         }), Redux.applyMiddleware(checker, logger))
     
         /*
@@ -310,7 +326,11 @@
             because we dont have a state inside of the App component and it does not make sense to any any just to cause a re-render
             Most of the times, we use this.setState to re-render the UI wheich we are use to*/
             const { store } = this.props
-            const { todos, goals } = store.getState() //get the slices of the state tree and pass them down as props to the individual component that needs them which will eventually used to render a list of todos and goals
+            const { todos, goals, loading } = store.getState() //get the slices of the state tree and pass them down as props to the individual component that needs them which will eventually used to render a list of todos and goals
+
+            if (loading === true) {
+                return <h3>Loading</h3>
+            }
 
             return (
               <div>
