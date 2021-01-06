@@ -12,6 +12,7 @@
     API(so we have window.API). so now we can inovoke eg API.fetchGoals ...etc. The methods we haveaccess to are 
      API{ fetchGoals: ƒ, fetchTodos: ƒ, saveTodo: ƒ, saveGoal: ƒ, saveTodoToggle: ƒ, deleteGoal: ƒ, deleteTodo: ƒ } -->
     <script src="https://ui.dev/goals-todos-api/index.js"></script>
+    <script src="https://unpkg.com/redux-thunk@2.2.0/dist/redux-thunk.min.js"></script> <!-- redux-thunk library-->
 </head>
 <body>
     <div id='app'></div>
@@ -41,6 +42,32 @@
             type: REMOVE_TODO,
             id,
           }
+        }
+
+        /*We have a function that can be passed in a dispatch
+        
+        This function returns dispatch dispatch method */
+        function handleDeleteTodo (todo) {
+
+            return (dispatch) => {
+                //this.props.store.dispatch(removeTodoAction(todo.id))  //if we had our API call inside our UI code at removeItem in Todo component, we use this.store.props but now our middleware will call this function for us from the store it already posesses
+                dispatch(removeTodoAction(todo.id))
+
+                return API.deleteTodo(todo.id)
+                /* The reason we do not want to wait for the server. Because sometimes there might be a delay.
+                You dont want the delay to reflect in your UI 
+                .then(() => {
+                    this.props.store.dispatch(removeGoalAction(goal.id))
+                })*/
+                /* check this link if you want to use fully convert this handleDeleteTodo method to b asycnhronous which it should be
+                so that you can use async/await 
+                https://jonathangrosdubois.medium.com/the-myth-of-evil-for-loops-and-try-catch-blocks-in-javascript-8601860295c1 */
+                .catch(() => {
+                    //this.props.store.dispatch(addTodoAction(todo)) //if we had our API call inside our UI code at removeItem in Todo component, we use this.store.props but now our middleware will call this function for us from the store it already posesses
+                    dispatch(addTodoAction(todo)) //we add the item back to the list if there is an error
+                    alert('An error occurred. Try again.')
+                })
+            }
         }
     
         function toggleTodoAction (id) {
@@ -132,6 +159,17 @@
     
           return next(action)
         }
+
+        /*We create a cutsom middleware in order to support the functionality in handleDeleteTodo() method
+        This middleware is so common that we dont need to wirte our own thunk code and include in in the middleware by .applyMiddleware(thunk), we could just use 
+        ReduxThunk.default, the official Redux thunk package from the library in  by calling .applyMiddleware(ReduxThunk.default) which we did
+        It is good to know though ;) */
+        const thunk = (store) => (next) => (action) => {
+            if (typeof action === 'function') {  //if the action retured by handleDeleteTodo() is a function
+                return action(store.dispatch)
+            }
+            return next(action)
+        }
     
         const logger = (store) => (next) => (action) => {
           console.group(action.type)
@@ -147,7 +185,7 @@
           goals,
           //What happens is calling cretaeStrore, other slices of state tree(todos & goals) will have default value of [] while isloading will have default value of `true`
           loading, //added the brand new reducer to our store. Each reducer you add, ass a new slice of state to manage to the state tree
-        }), Redux.applyMiddleware(checker, logger))
+        }), Redux.applyMiddleware(checker, logger, ReduxThunk.default))
     
         /*
         With React we dont have to do any of these DOM operations because React does that for us
@@ -230,19 +268,9 @@
             }
 
             removeItem = (todo) => {
-                this.props.store.dispatch(removeTodoAction(todo.id))
 
-                return API.deleteTodo(todo.id)
-                /* The reason we do not want to wait for the server. Because sometimes there might be a delay.
-                You dont want the delay to reflect in your UI 
-                .then(() => {
-                    this.props.store.dispatch(removeGoalAction(goal.id))
-                })*/
-                /**/
-                .catch(() => {
-                    this.props.store.dispatch(addTodoAction(todo)) //we add the item back to the list if there is an error
-                    alert('An error occurred. Try again.')
-                })
+                //Now we just have UI logic. We moved the API logic to an asynchronous function the returns a promise
+                this.props.store.dispatch(handleDeleteTodo(todo))
             }
 
             toggleItem = (id) => {
