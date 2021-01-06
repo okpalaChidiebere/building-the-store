@@ -13,6 +13,7 @@
      API{ fetchGoals: ƒ, fetchTodos: ƒ, saveTodo: ƒ, saveGoal: ƒ, saveTodoToggle: ƒ, deleteGoal: ƒ, deleteTodo: ƒ } -->
     <script src="https://ui.dev/goals-todos-api/index.js"></script>
     <script src="https://unpkg.com/redux-thunk@2.2.0/dist/redux-thunk.min.js"></script> <!-- redux-thunk library-->
+    <script src="https://unpkg.com/react-redux@5.0.6/dist/react-redux.min.js"></script> <!-- react-redux the official package for combining React and Redux together-->
 </head>
 <body>
     <div id='app'></div>
@@ -399,7 +400,7 @@
           }
         }
 
-        const ConnectedTodos = connect((state) => ({
+        const ConnectedTodos = ReactRedux.connect((state) => ({
             todos: state.todos
         }))(Todos)
     
@@ -470,7 +471,7 @@
             }
         }*/
 
-        const ConnectedGoals = connect((state) => ({
+        const ConnectedGoals = ReactRedux.connect((state) => ({
             goals: state.goals
         }))(Goals)
     
@@ -542,84 +543,13 @@
 
         /*We no longer need the code above because we have a connect function that will abstract 
         the Context.Consumer the way we abstracted Context.Provider in Provider component*/
-        const ConnectedApp = connect((state) => ({
+        const ConnectedApp = ReactRedux.connect((state) => ({
             //We pass whatever prop the component to redner will need from store
             loading: state.loading
         }))(App)
-
-        //create a Context object that has a Provider property as well as Consumer property
-        const Context = React.createContext()
-
-        //connected app implementation. Ideally you have library for this. So you dont need to implement this
-        function connect(propsNeeededByComponent) {
-            return (Component) => {
-
-                /* This receiver component is where we use subscribe. we figure what data that this component needs and 
-                then we render this component passing it that data */
-                /*If you look closer code in here is smilar to what you will do at that App component when you did not use Context in this react app*/
-                class Receiver extends React.Component {
-                    
-                    /* use store.subscribe somewhere in our code so that we are aware whenever the store changes */ 
-                    componentDidMount() {
-                        const { subscribe } = this.props.store;
-
-                        this.unsubscribe = subscribe(() => {
-                            this.forceUpdate();
-                        });
-                    }
-
-                    componentWillUnmount() {
-                        this.unsubscribe();
-                    }
-                    /* End use store.subscribe*/
-
-                    /*figure out what state that the component that we will be rendering needs(we can get the store from the first bracket) 
-                    as well as what we will render(the component passed in the second bracket)*/
-                    render() {
-                        const { dispatch, getState } = this.props.store;
-                        const state = getState();
-                        //FYI propsNeeededByComponent is a callback function that gets the state tree and returns an object and each propert in the object will reperesent that state that the component(in th second bracket needs) needs
-                        const stateNeeded = propsNeeededByComponent(state); 
-                        return (
-                            <Component
-                                {...stateNeeded}
-                                dispatch={/*in our App only the App component used this dispatch, but any other component that uses our custom connect library has access to the dispatch method too*/
-                                    dispatch}
-                            />
-                        );
-                    }
-                }
-
-                /* connect to context so that we can grab the store from the context */
-                class ConnectedComponent extends React.Component {
-                    render() {
-                        return (
-                            <Context.Consumer>
-                                { /*We render another component called Receiver passing it our store*/
-                                    (store) => <Receiver store={store} />}
-                            </Context.Consumer>
-                        );
-                    }
-                }
-
-                return ConnectedComponent;
-            };
-        }
-
-        /*We create a little abstraction of the provider ourselves by creating our Provider Component*/
-        class Provider extends React.Component {
-            render () {
-                return (
-                    <Context.Provider value={/*Any child component that use consumer can go ahead and consume our store withoud needing to pass it down as a prop*/
-                        this.props.store}>
-                        {this.props.children}
-                    </Context.Provider>
-                )
-            }
-        }
     
         ReactDOM.render(
-            <Provider store={/*We only pass the store as prop here and any of the child components can grap the store without calling props
+            <ReactRedux.Provider store={/*We only pass the store as prop here and any of the child components can grap the store without calling props
                 <Provider>
                     <App>
                         <Context.Consumer>
@@ -640,7 +570,7 @@
                 */
                 store}>
                 <ConnectedApp />
-            </Provider>,
+            </ReactRedux.Provider>,
           document.getElementById('app')
         )
       </script>
