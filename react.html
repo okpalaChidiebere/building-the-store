@@ -69,6 +69,55 @@
                 })
             }
         }
+
+        /*
+        The code below executes in this order
+        - The API request occurs first
+        - The API request is resolved
+        - Thunk middleware invokes the function with dispatch()
+        - The action returned by the receiveTodos is dispatched
+        
+        in your project make this function async like
+        const handleDeleteGoal = async (goal) => (dispatch) => {} then you can use try/catch as well was await
+        like
+        try {
+            const goal = await API.saveGoal(name);
+            dispatch(addGoalAction(goal))
+            cb()
+        } catch (error) {
+            console.log('ERROR!', error);
+            alert('There was an error. Try again.')
+        }
+        https://jonathangrosdubois.medium.com/the-myth-of-evil-for-loops-and-try-catch-blocks-in-javascript-8601860295c1
+        */
+        const handleAddGoal = (name, cb) => (dispatch) => {
+            API.saveGoal(name)
+            .then((goal) => {
+                dispatch(addGoalAction(goal))
+                cb() //used to set the input filed to be empty
+            })
+            .catch(() => alert('There was an error. Try again.'))
+        }
+
+        /*
+        The code below executes in this order
+        -Thunk middleware invokes the first function with dispatch()
+        - The action returned by the removeGoalAction is dispatched
+        - The API request occurs first
+        - The API request is resolved
+        **** if the API fails we rollback the previous action made to the state** know as optimistic update
+        - Thunk middleware invokes the second function with dispatch()
+        - The action returned by the addGoalAction is dispatched */
+        const handleDeleteGoal = (goal) => (dispatch) => {
+
+            dispatch(removeGoalAction(goal.id))
+            
+            API.deleteGoal(goal.id)
+            .catch(() => {
+                dispatch(addGoalAction(goal))
+                alert('An error occurred. Try again.')
+            })
+        }
     
         function toggleTodoAction (id) {
           return {
@@ -311,23 +360,31 @@
 
             addItem = (e) => {
                 e.preventDefault()
-                const name = this.input.value
+                this.props.store.dispatch(handleAddGoal(
+                    this.input.value,
+                    () => this.input.value = '' //invoking this callback function will set this input field to empty
+                    ))
+
+                /*const name = this.input.value
                 this.input.value = ''
 
                 this.props.store.dispatch(addGoalAction({
                     id: generateId(),
                     name,
-                }))
+                }))*/
             }
 
             removeItem = (goal) => {
-                this.props.store.dispatch(removeGoalAction(goal.id))
+
+                this.props.store.dispatch(handleDeleteGoal(goal))
+
+                /*this.props.store.dispatch(removeGoalAction(goal.id))
 
                 return API.deleteGoal(goal.id)
                 .catch(() => {
                     this.props.store.dispatch(addGoalAction(goal))
                     alert('An error occurred. Try again.')
-                })
+                })*/
             }
 
           render() {
