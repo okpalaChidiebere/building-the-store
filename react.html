@@ -342,7 +342,7 @@
 
                 e.preventDefault()
 
-                this.props.store.dispatch(handleAddTodo(
+                this.props.dispatch(handleAddTodo(
         	        this.todoInput.value,
                     () => this.todoInput.value = ''
                 ))
@@ -361,11 +361,11 @@
             removeItem = (todo) => {
 
                 //Now we just have UI logic. We moved the API logic to an asynchronous function the returns a promise
-                this.props.store.dispatch(handleDeleteTodo(todo))
+                this.props.dispatch(handleDeleteTodo(todo))
             }
 
             toggleItem = (id) => {
-                this.props.store.dispatch(handleToggle(id))
+                this.props.dispatch(handleToggle(id))
                 //this.props.store.dispatch(toggleTodoAction(id))
             }
 
@@ -398,12 +398,26 @@
             )
           }
         }
+
+        class ConnectedTodos extends React.Component {
+            render() {
+                return (
+                    <Context.Consumer>
+                    {(store) => {
+                        const { todos } = store.getState()
+
+                        return <Todos todos={todos} dispatch={store.dispatch} />
+                    }}
+                    </Context.Consumer>
+                )
+            }
+        }
     
         class Goals extends React.Component {
 
             addItem = (e) => {
                 e.preventDefault()
-                this.props.store.dispatch(handleAddGoal(
+                this.props.dispatch(handleAddGoal(
                     this.input.value,
                     () => this.input.value = '' //invoking this callback function will set this input field to empty
                     ))
@@ -419,7 +433,7 @@
 
             removeItem = (goal) => {
 
-                this.props.store.dispatch(handleDeleteGoal(goal))
+                this.props.dispatch(handleDeleteGoal(goal))
 
                 /*this.props.store.dispatch(removeGoalAction(goal.id))
 
@@ -445,6 +459,25 @@
               </div>
             )
           }
+        }
+
+        /*You need to know what information it needs from the store before you implement its Container Component
+        Looking at the existing Goals component, it needs the dispatch and goals (Basically to know them them they are props usually in props for that component when you use Redux for your app
+        Because redux makes you manages states for your app from one place and pass the store as props to the components that needs them. Howevern now we use React Context they will no longer use passed down as props)
+        So insead of having <Goals goals={goals} store={this.props.store}/> in render method for Apps we now will have <ConnectedGoals />
+        We also change the way we call the state inside the Goals Component it self too. We remove the .store*/
+        class ConnectedGoals extends React.Component {
+            render() {
+                return (
+                    <Context.Consumer>
+                    {(store) => {
+                        const { goals } = store.getState()
+
+                        return <Goals goals={goals} dispatch={store.dispatch} />
+                    }}
+                    </Context.Consumer>
+                )
+            }
         }
     
         class App extends React.Component {
@@ -473,7 +506,10 @@
             because we dont have a state inside of the App component and it does not make sense to any any just to cause a re-render
             Most of the times, we use this.setState to re-render the UI wheich we are use to*/
             const { store } = this.props
-            const { todos, goals, loading } = store.getState() //get the slices of the state tree and pass them down as props to the individual component that needs them which will eventually used to render a list of todos and goals
+            /*We no longer need to pass the todos and goals slice of the store down as prop.
+            Uisng the ContainerComponent pattern helps solves this
+            */ 
+            const { loading } = store.getState() //get the slices of the state tree and pass them down as props to the individual component that needs them which will eventually used to render a list of todos and goals
 
             if (loading === true) {
                 return <h3>Loading</h3>
@@ -481,19 +517,70 @@
 
             return (
               <div>
-                <Todos todos={todos} store={/*we get the store props passed to our app component and pass it down to the Todo component*/
-                    this.props.store}/>
-                <Goals goals={goals} store={this.props.store}/>
+                <ConnectedTodos />
+                <ConnectedGoals />
               </div>
             )
           }
         }
+
+        /*
+        This component is connected to the store. This component is only responsible for interacting with the store. 
+        Anything to do with the store and the data is done in the connected component
+        So in our case, we grab the store of the context and then pass it to the APP component
+        This helps us solve the problem that we have in APP component where need access to the store inside componentDidMount and render methods respectively
+        So using this Connect or Container Component pattern helps us
+        */
+        class ConnectedApp extends React.Component {
+            render() {
+                return (
+                <Context.Consumer>
+                {(store) => (
+                    <App store={store} />
+                )}
+                </Context.Consumer>
+                )
+            }
+        }
+
+        //create a Context object that has a Provider property as well as Consumer property
+        const Context = React.createContext()
+
+        /*We create a little abstraction of the provider ourselves by creating our Provider Component*/
+        class Provider extends React.Component {
+            render () {
+                return (
+                    <Context.Provider value={/*Any child component that use consumer can go ahead and consume our store withoud needing to pass it down as a prop*/
+                        this.props.store}>
+                        {this.props.children}
+                    </Context.Provider>
+                )
+            }
+        }
     
         ReactDOM.render(
-          <App store={/*Ideally, we will have our store with the actions and reducers in 
-            another file(we will have all the code in <text/javascript> at another file) and we will import it as prop to our app. 
-            This way, we are maintaining our state from one place which is the purpose of using Redux*/
-              store}/>,
+            <Provider store={/*We only pass the store as prop here and any of the child components can grap the store without calling props
+                <Provider>
+                    <App>
+                        <Context.Consumer>
+                            {(store) => ()}
+                        </Context.Consumer>
+                    </App>
+                </Provider>
+                But instead of passing app down directly, we created a container implemented a ConnectedCOmponent pattern. It looks like this
+                <ConnectedComponent>
+                    <PresentationalComponent>
+                            {(store) => ()}
+                    </PresentationalComponent>
+                </ConnectedComponent>
+                - Connected Component: This component is connected to the store. This component is only responsible for interacting with the store. 
+                Anything to do with the store and the data is done in the connected component
+                - Presentational Component: This is just responsible for rendering content. 
+                So, it concerned with how things look. Anything that have to do with something to render
+                */
+                store}>
+                <ConnectedApp />
+            </Provider>,
           document.getElementById('app')
         )
       </script>
