@@ -141,6 +141,21 @@
             })
         }
 
+        /**
+         * Rememeber handlers are also Action creators
+         */
+        const handleInitialData = () => (dispatch) => {
+
+            //Promise.all() to wait until all Promises have resolved before displaying the content to the user.
+            //more on https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
+            Promise.all([
+                API.fetchTodos(),
+                API.fetchGoals()
+            ]).then(([ todos, goals ]) => {
+                dispatch(receiveDataAction(todos, goals))
+            })
+        }
+
         function toggleTodoAction (id) {
           return {
             type: TOGGLE_TODO,
@@ -439,16 +454,17 @@
                 
                 store.subscribe(() => this.forceUpdate()) //forceUpdate is an anti-pattern in React. We rearly use it but it works
 
-                //Promise.all() to wait until all Promises have resolved before displaying the content to the user.
-                //more on https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
-                Promise.all([
+                store.dispatch(handleInitialData())
+
+                
+                /*Promise.all([
                     API.fetchTodos(),
                     API.fetchGoals()
                 ]).then(([ todos, goals ]) => {
                     //console.log('Todos', todos)
                     //console.log('Goals', goals)
                     store.dispatch(receiveDataAction(todos, goals))
-                })
+                })*/
             }
 
           render() {
