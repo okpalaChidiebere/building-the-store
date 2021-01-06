@@ -399,19 +399,9 @@
           }
         }
 
-        class ConnectedTodos extends React.Component {
-            render() {
-                return (
-                    <Context.Consumer>
-                    {(store) => {
-                        const { todos } = store.getState()
-
-                        return <Todos todos={todos} dispatch={store.dispatch} />
-                    }}
-                    </Context.Consumer>
-                )
-            }
-        }
+        const ConnectedTodos = connect((state) => ({
+            todos: state.todos
+        }))(Todos)
     
         class Goals extends React.Component {
 
@@ -466,7 +456,7 @@
         Because redux makes you manages states for your app from one place and pass the store as props to the components that needs them. Howevern now we use React Context they will no longer use passed down as props)
         So insead of having <Goals goals={goals} store={this.props.store}/> in render method for Apps we now will have <ConnectedGoals />
         We also change the way we call the state inside the Goals Component it self too. We remove the .store*/
-        class ConnectedGoals extends React.Component {
+        /*class ConnectedGoals extends React.Component {
             render() {
                 return (
                     <Context.Consumer>
@@ -478,16 +468,23 @@
                     </Context.Consumer>
                 )
             }
-        }
+        }*/
+
+        const ConnectedGoals = connect((state) => ({
+            goals: state.goals
+        }))(Goals)
     
         class App extends React.Component {
 
             componentDidMount () {
-                const { store } = this.props
+                //const { store } = this.props //we no longer pass the whole store here
+                const { dispatch } = this.props
                 
-                store.subscribe(() => this.forceUpdate()) //forceUpdate is an anti-pattern in React. We rearly use it but it works
+                //The user no longer needs to manually subscribe we cause we can wrap this implementeation inside the connect function too
+                //store.subscribe(() => this.forceUpdate()) //forceUpdate is an anti-pattern in React. We rearly use it but it works
 
-                store.dispatch(handleInitialData())
+                //store.dispatch(handleInitialData())
+                dispatch(handleInitialData())
 
                 
                 /*Promise.all([
@@ -505,13 +502,13 @@
             /*Whenever the forceUpdate gets called we will re-render this component. This is rarely used to re-render components but for our case right here, it fits
             because we dont have a state inside of the App component and it does not make sense to any any just to cause a re-render
             Most of the times, we use this.setState to re-render the UI wheich we are use to*/
-            const { store } = this.props
+            //const { store } = this.props
             /*We no longer need to pass the todos and goals slice of the store down as prop.
             Uisng the ContainerComponent pattern helps solves this
             */ 
-            const { loading } = store.getState() //get the slices of the state tree and pass them down as props to the individual component that needs them which will eventually used to render a list of todos and goals
+            //const { loading } = store.getState() //get the slices of the state tree and pass them down as props to the individual component that needs them which will eventually used to render a list of todos and goals
 
-            if (loading === true) {
+            if (this.props.loading === true) {
                 return <h3>Loading</h3>
             }
 
@@ -531,7 +528,7 @@
         This helps us solve the problem that we have in APP component where need access to the store inside componentDidMount and render methods respectively
         So using this Connect or Container Component pattern helps us
         */
-        class ConnectedApp extends React.Component {
+        /*class ConnectedApp extends React.Component {
             render() {
                 return (
                 <Context.Consumer>
@@ -541,10 +538,73 @@
                 </Context.Consumer>
                 )
             }
-        }
+        }*/
+
+        /*We no longer need the code above because we have a connect function that will abstract 
+        the Context.Consumer the way we abstracted Context.Provider in Provider component*/
+        const ConnectedApp = connect((state) => ({
+            //We pass whatever prop the component to redner will need from store
+            loading: state.loading
+        }))(App)
 
         //create a Context object that has a Provider property as well as Consumer property
         const Context = React.createContext()
+
+        //connected app implementation. Ideally you have library for this. So you dont need to implement this
+        function connect(propsNeeededByComponent) {
+            return (Component) => {
+
+                /* This receiver component is where we use subscribe. we figure what data that this component needs and 
+                then we render this component passing it that data */
+                /*If you look closer code in here is smilar to what you will do at that App component when you did not use Context in this react app*/
+                class Receiver extends React.Component {
+                    
+                    /* use store.subscribe somewhere in our code so that we are aware whenever the store changes */ 
+                    componentDidMount() {
+                        const { subscribe } = this.props.store;
+
+                        this.unsubscribe = subscribe(() => {
+                            this.forceUpdate();
+                        });
+                    }
+
+                    componentWillUnmount() {
+                        this.unsubscribe();
+                    }
+                    /* End use store.subscribe*/
+
+                    /*figure out what state that the component that we will be rendering needs(we can get the store from the first bracket) 
+                    as well as what we will render(the component passed in the second bracket)*/
+                    render() {
+                        const { dispatch, getState } = this.props.store;
+                        const state = getState();
+                        //FYI propsNeeededByComponent is a callback function that gets the state tree and returns an object and each propert in the object will reperesent that state that the component(in th second bracket needs) needs
+                        const stateNeeded = propsNeeededByComponent(state); 
+                        return (
+                            <Component
+                                {...stateNeeded}
+                                dispatch={/*in our App only the App component used this dispatch, but any other component that uses our custom connect library has access to the dispatch method too*/
+                                    dispatch}
+                            />
+                        );
+                    }
+                }
+
+                /* connect to context so that we can grab the store from the context */
+                class ConnectedComponent extends React.Component {
+                    render() {
+                        return (
+                            <Context.Consumer>
+                                { /*We render another component called Receiver passing it our store*/
+                                    (store) => <Receiver store={store} />}
+                            </Context.Consumer>
+                        );
+                    }
+                }
+
+                return ConnectedComponent;
+            };
+        }
 
         /*We create a little abstraction of the provider ourselves by creating our Provider Component*/
         class Provider extends React.Component {
