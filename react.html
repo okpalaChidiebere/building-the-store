@@ -118,7 +118,29 @@
                 alert('An error occurred. Try again.')
             })
         }
-    
+
+        const handleAddTodo = (name, cb) => (dispatch) => {
+
+            API.saveTodo(name)
+            .then((todo) => {
+                dispatch(addTodoAction(todo))
+                cb()
+            })
+            .catch(() => {
+                alert('There was an error. Try again.')
+            })
+        }
+
+        const handleToggle = (id) => (dispatch) => {
+
+            dispatch(toggleTodoAction(id))
+            API.saveTodoToggle(id)
+            .catch(() => {
+                dispatch(toggleTodoAction(id))
+                alert('An error occurred. Try again.')
+            })
+        }
+
         function toggleTodoAction (id) {
           return {
             type: TOGGLE_TODO,
@@ -304,7 +326,12 @@
             addItem = (e) => {
 
                 e.preventDefault()
-                const name = this.todoInput.value //we can easily reference this.input with arrow functions here because we assigned an input property to the global this within this component
+
+                this.props.store.dispatch(handleAddTodo(
+        	        this.todoInput.value,
+                    () => this.todoInput.value = ''
+                ))
+                /*const name = this.todoInput.value //we can easily reference this.input with arrow functions here because we assigned an input property to the global this within this component
                 this.todoInput.value = ''
                 
                 //the store was passed as props from the parent, the App Component. We will still break this props down into separete modules later
@@ -313,7 +340,7 @@
                     name,
                     complete: false,
                     id: generateId()
-                }))
+                }))*/
             }
 
             removeItem = (todo) => {
@@ -323,7 +350,8 @@
             }
 
             toggleItem = (id) => {
-                this.props.store.dispatch(toggleTodoAction(id))
+                this.props.store.dispatch(handleToggle(id))
+                //this.props.store.dispatch(toggleTodoAction(id))
             }
 
           render() {
@@ -350,7 +378,7 @@
                 />
                 <button onClick={this.addItem}>Add Todo</button>
     
-                <List items={this.props.todos} remove={this.removeItem}/>
+                <List items={this.props.todos} remove={this.removeItem} toggle={this.toggleItem}/>
               </div>
             )
           }
